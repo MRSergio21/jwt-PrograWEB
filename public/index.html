@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Auth JWT Simple</title>
+    <style>
+        .container { max-width: 400px; margin: 20px auto; padding: 20px; }
+        .hide { display: none; color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="publicArea">
+            <h2>Registro</h2>
+            <form id="registerForm">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Contraseña" required>
+                <button type="submit">Registrar</button>
+            </form>
+            <h2>Login</h2>
+            <form id="loginForm">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Contraseña" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+        <div id="privateArea" class="hide">
+            <h2>Área Privada</h2>
+            <p id="welcomeMessage"></p>
+            <button onclick="logout()">Cerrar Sesión</button>
+        </div>
+
+        </div>
+
+    </div>
+    <script>
+        document.getElementById('registerForm').onsubmit = (e) => {
+            e.preventDefault();
+            fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: e.target[0].value,
+                    password: e.target[1].value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                alert(data.message || data.error);
+                if (data.message) e.target.reset();
+            });
+        };
+
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: e.target[0].value,
+                    password: e.target[1].value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    showPrivateArea();
+                } else {
+                    alert(data.error);
+                }
+            });
+        };
+
+        function showPrivateArea() {
+            fetch('/private', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('welcomeMessage').textContent = 
+                    `¡Bienvenido ${data.user.email}!`;
+                document.getElementById('publicArea').classList.add('hide');
+                document.getElementById('privateArea').classList.remove('hide');
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            document.getElementById('publicArea').classList.remove('hide');
+            document.getElementById('privateArea').classList.add('hide');
+        }
+
+        if (localStorage.getItem('token')) {
+            showPrivateArea();
+        }
+
+
+    </script>
+</body>
+</html>
